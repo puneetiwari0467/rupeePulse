@@ -22,7 +22,7 @@ export default defineConfig({
     { name: 'phone', use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } }
   ],
   webServer: {
-    command: `"${java}" -jar "${jar}" --server.address=127.0.0.1 --server.port=18962 --AZURE_OPENAI_API_KEY= --AZURE_OPENAI_ENDPOINT=`,
+    command: `"${java}" -jar "${jar}" --server.address=127.0.0.1 --server.port=18962 --AZURE_OPENAI_API_KEY= --AZURE_OPENAI_ENDPOINT= --GMAIL_CLIENT_ID= --GMAIL_CLIENT_SECRET= --GMAIL_REDIRECT_URI= --GMAIL_DEMO_EMAIL=`,
     url: `${baseURL}/api/dashboard`,
     reuseExistingServer: false,
     timeout: 60000

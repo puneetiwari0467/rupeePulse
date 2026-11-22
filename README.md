@@ -42,9 +42,28 @@ Open **http://127.0.0.1:8091/**. With no Azure model credentials, the app uses l
 3. **Ask AI:** ask a spending question, then a follow-up. The answer labels the actual responder. Live questions send this session’s ledger and up to four recent turns to the configured Azure deployment. The offline reporter supports specific ledger queries; it is not a language model.
 4. **Transactions → Import transactions:** use a fictional notice or a UTF-8 four-column CSV: `Date,Merchant,Amount,Type`. Example: `2026-11-21,"Market, North",125.50,DEBIT`. ISO, `d MMM yyyy` and Indian numeric dates are accepted. Reimporting the same file to the same account is blocked; overlapping *different* statements are not automatically reconciled.
 
+## Optional Gmail import (one demo mailbox)
+
+**Tools → Data sources → Demo mailbox** is independent of **Load sample emails**. With no Google OAuth settings the existing demo works unchanged, but cannot read Gmail.
+
+1. Enable the [Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com) in your Google Cloud project. In Google Auth Platform select **External / Testing**, add the dedicated demo address as a test user, and request only [`gmail.readonly`](https://developers.google.com/workspace/gmail/api/auth/scopes). This is a restricted, mailbox-wide read permission: the label filter is enforced by the application, not by Google consent.
+2. Create a **Web application** OAuth client. Register the exact redirects you intend to use: `http://127.0.0.1:8094/api/gmail/callback` for local testing and `https://foldpulse-builders-day.azurewebsites.net/api/gmail/callback` for the existing Azure host.
+3. Set **`GMAIL_CLIENT_ID`**, **`GMAIL_CLIENT_SECRET`**, **`GMAIL_DEMO_EMAIL`** (one exact primary mailbox) and **`GMAIL_REDIRECT_URI`** on the server, not in React, chat or Git. Use process environment variables locally or App Service environment settings/Key Vault references on a permitted deployment. Test outside the live judging session before redeploying.
+4. Build `frontend` (`npm ci`, `npm run build`) and run `mvn -Pazure-release verify` from the project root using Java 21. Start the local trial in the shell with the settings above: `java -jar .\target\azure\rupeepulse-1.1.0.jar --server.address=127.0.0.1 --server.port=8094`. Open **http://127.0.0.1:8094/**; don't switch between `localhost` and `127.0.0.1` during consent.
+5. From a fresh workspace click **Connect demo Gmail (read-only)** and consent using the allowlisted account. Expand **Prepare the test email** → **Open Gmail compose with the sample**. Address it **to yourself**, send it from that same account, and apply the Gmail label **`RupeePulseDemo`** to that sent message. Use the prefilled subject/body and remove your signature. The app cannot send mail.
+6. Click **Preview from Gmail**. You should initially see `Demo Cafe · ₹711 out · IDFC FIRST Bank ••9101` with no ledger change. Click **Import this debit**, then open its row in Transactions: the source is **Gmail API · self-sent demo**. From the untouched seed ledger the expected IDFC balance is **₹10,599.99 → ₹9,888.99**, leaving **₹8,289** after the premium and a **₹2,711 shortfall** on the ₹11,000 card payment. Another preview must not book it again.
+
+The connector uses one-time, session-bound state and PKCE; no background polling or refresh token. It checks up to three recent matches (last day) for the label, `SENT`, exact subject, sender and recipient. It checks metadata before asking for a message body. Only a small `text/plain` part in the fictional IDFC debit template is accepted. Unrelated mail, real bank alerts, signatures and HTML-only messages are out of scope. The raw email is not saved in the ledger or sent to the AI. Confirmed normalized demo fields can be sent if the user later chooses Ask AI. Reset or **Disconnect this session** clears the server-side connection; revoke the Google grant itself in [Google Account permissions](https://myaccount.google.com/permissions).
+
+**Local shortcut on Windows:** after building the branch JAR, save the downloaded **Web client JSON outside this repo**, select Java 21, and run the following from this project root. Replace both placeholders. The launcher sets all four variables only in the server process and turns off Azure AI for the mailbox trial.
+
+```powershell
+.\deploy\start-gmail-demo.ps1 -ClientJson 'C:\private\google-web-client.json' -DemoEmail 'demo@example.test'
+```
+
 ## Data boundaries
 
-- Fixtures represent November 2026. **Finvu/AA, Gmail, broker holdings, bureau scores, policies and billers are simulated**, not production integrations. No bank OTP, bank login, real payment or mandate change. Spaces are local collections, not shared invitations.
+- Fixtures represent November 2026. **Finvu/AA, the sample email feed, broker holdings, bureau scores, policies and billers are simulated**. Only the optional, configured, consented Gmail connector fetches a real message containing fictional data. No bank OTP, bank login, real payment or mandate change. Spaces are local collections, not shared invitations.
 - The application starts each browser session with its own in-memory ledger. Tabs sharing the session cookie share changes; a separate browser profile/private session does not. A restart, reset, or session timeout discards the data. Use only fictional or redacted imports.
 - Monthly activity includes bank and card entries, excluding simulated card repayments and savings-to-deposit transfers. A demo balance mismatch is a prompt to reconcile, not evidence of a particular missing purchase. Investment values and FX conversions are illustrative, not market quotes.
 

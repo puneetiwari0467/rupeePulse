@@ -18,9 +18,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class FinanceController {
 
     private final FinanceEngineService engine;
+    private final GmailConnection mailbox;
 
-    public FinanceController(FinanceEngineService engine) {
+    public FinanceController(FinanceEngineService engine, GmailConnection mailbox) {
         this.engine = engine;
+        this.mailbox = mailbox;
     }
 
     @GetMapping("/dashboard")
@@ -100,6 +102,7 @@ public class FinanceController {
 
     @PostMapping("/reset")
     public DashboardResponse reset(@RequestParam(defaultValue = "false") boolean empty) {
+        mailbox.clear();
         return engine.resetWorkspace(empty);
     }
 

@@ -8,7 +8,7 @@ public final class Models {
 
     public enum AccountKind { BANK, CREDIT_CARD }
     public enum Direction { DEBIT, CREDIT }
-    public enum DataSource { FINVU_AA, GMAIL_ALERT, AI_PASTE, STATEMENT_CSV, SIMULATION }
+    public enum DataSource { FINVU_AA, GMAIL_ALERT, GMAIL_IMPORT, AI_PASTE, STATEMENT_CSV, SIMULATION }
 
     public enum NoticeIntent {
         BANK_TXN,

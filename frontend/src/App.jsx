@@ -22,11 +22,13 @@ async function api(path,body) {
 
 export default function App() {
   const [data,setData]=useState(null), [loadError,setLoadError]=useState(''), [route,setRoute]=useState(current);
-  const [modal,setModal]=useState(''), [seed,setSeed]=useState(null), [toast,setToast]=useState(''),[epoch,setEpoch]=useState(0);
+  const [modal,setModal]=useState(()=>new URLSearchParams(location.search).get('gmail')==='return'?'sources':''),
+    [seed,setSeed]=useState(null), [toast,setToast]=useState(''),[epoch,setEpoch]=useState(0);
   const [privateMode,setPrivateMode]=useState(()=>sessionStorage.getItem('foldpulse:hidden')==='1');
   const timer=useRef(null),seq=useRef(0);
   const load=useCallback(async()=>{setLoadError('');try{setData(await api('/dashboard'));}catch(e){setLoadError(e.message);}},[]);
-  useEffect(()=>{void load();const change=()=>{setRoute(current());setModal('');window.scrollTo(0,0);};
+  useEffect(()=>{if(new URLSearchParams(location.search).get('gmail')==='return')window.history.replaceState(null,'',location.pathname+location.hash);
+    void load();const change=()=>{setRoute(current());setModal('');window.scrollTo(0,0);};
     window.addEventListener('hashchange',change);return ()=>{window.removeEventListener('hashchange',change);clearTimeout(timer.current);};},[load]);
   const navigate=v=>{if(valid.has(v))location.hash=v;};
   const active=['insurance','spaces','cards'].includes(route)?'home':route==='pay'?'bills':route;
@@ -61,8 +63,8 @@ export default function App() {
       {toast && <div className="toast" role="status">{toast}<button onClick={()=>setToast('')} aria-label="Dismiss notification">×</button></div>}
       {modal==='tools' && <Dialog title="Workspace tools" onClose={close}><div className="editor">
         {[[Unplug,'Data sources',()=>setModal('sources')],[Import,'Import transactions',()=>setModal('import')],[EyeOff,'Hide workspace',()=>privacy(true)],[RotateCcw,'Reset demo',()=>setModal('reset')]].map(([Icon,title,action])=><button className="choice" key={title} onClick={action}><Icon size={18}/>{title}</button>)}
-        <p className="fine">No real bank, Gmail or brokerage connection. Changes stay in this browser’s session and expire after inactivity.</p></div></Dialog>}
-      {modal==='sources' && <Sources data={data} update={update} onClose={close}/>}
+        <p className="fine">Banks and brokerages are simulated. A dedicated demo mailbox can be connected separately, with consent. Changes stay in this browser’s session.</p></div></Dialog>}
+      {modal==='sources' && <Sources data={data} update={update} api={api} onImported={setData} onClose={close}/>}
       {modal==='import' && <IngestModal data={data} parse={parse} upload={v=>update('/csv/upload',v,'Statement imported.')} onClose={close}/>}
       {modal==='reset' && <Editor title="Reset this demo?" note="This removes imported rows, changes and chat from this workspace and restores the original examples. It does not affect other visitors." submitLabel="Reset workspace" onClose={close}
         onSave={async()=>{await update('/reset?empty=false',{},'Demo restored.');setEpoch(e=>e+1);navigate('home');}}/>}

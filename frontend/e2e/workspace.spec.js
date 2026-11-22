@@ -180,6 +180,23 @@ test('initial network failure has an actionable retry',async({page})=>{
   await button(page,'Retry connection').click();await expect(page.getByRole('heading',{name:'Your money brief.'})).toBeVisible();
 });
 
+test('optional Gmail without credentials never connects or sends; sample email feed still works',async({page})=>{
+  await start(page);await tools(page,'Data sources');
+  const section=dlg(page).getByRole('region',{name:'Live Gmail demo connector'});
+  await expect(section).toContainText('Gmail OAuth is not configured');
+  await expect(section.getByRole('button',{name:/Connect demo Gmail/})).toHaveCount(0);
+  await section.getByText('Prepare the test email',{exact:true}).click();
+  const compose=new URL(await section.getByRole('link',{name:/Open Gmail compose/}).getAttribute('href'));
+  expect(compose.origin).toBe('https://mail.google.com');
+  expect(compose.searchParams.get('su')).toBe('[rupeePulse DEMO] Debit alert RP-711');
+  expect(compose.searchParams.get('body')).toContain('XX9101 debited INR 711.00');
+  expect(compose.searchParams.has('to')).toBe(false);
+  expect((await page.request.post('/api/gmail/connect',{data:{}})).status()).toBe(503);
+  expect((await page.request.post('/api/gmail/preview',{data:{}})).status()).toBe(401);
+  await button(dlg(page),'Load sample emails').click();await expect(dlg(page)).toHaveCount(0);
+  expect((await dash(page)).metrics.totalProjectedShortfall).toBe(2000);
+});
+
 test('utility, gas, water and FASTag previews each debit only the selected account',async({page})=>{
   await start(page);await nav(page,'Bills');await button(page,'Pay bills').click();
   for (const name of [/^Preview BESCOM/,/^Preview Indane/,/^Preview BWSSB/,/^Preview ICICI Bank FASTag/]) {

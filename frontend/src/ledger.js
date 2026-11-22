@@ -21,4 +21,4 @@ export const transfer = t => ['Investment / FD Sweep','Card repayment'].includes
 export const paise = n => Math.round(Number(n) * 100);
 export const sum = (rows, field='amount') => rows.reduce((a, r) => a + paise(r[field]), 0) / 100;
 export const accounts = data => data.bankAccounts.map(b => ({value:b.id, label:`${b.bankName} ${b.maskedNumber}`}));
-export const sourceLabel = t => ({ FINVU_AA:'Sample bank feed', GMAIL_ALERT:'Sample email', AI_PASTE:'Pasted alert', STATEMENT_CSV:'Statement CSV', SIMULATION:'Simulation' }[t.source] || 'Ledger');
+export const sourceLabel = t => ({ FINVU_AA:'Sample bank feed', GMAIL_ALERT:'Sample email', GMAIL_IMPORT:'Gmail API · self-sent demo', AI_PASTE:'Pasted alert', STATEMENT_CSV:'Statement CSV', SIMULATION:'Simulation' }[t.source] || 'Ledger');

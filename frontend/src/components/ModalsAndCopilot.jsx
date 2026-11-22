@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUp, LoaderCircle, Sparkles } from 'lucide-react';
 import { MarkdownLite } from '../format';
+import GmailDemoSource from './GmailDemoSource';
 import { accounts } from '../ledger';
 import { Dialog, Segments } from './Surface';
 
@@ -54,7 +55,7 @@ export function AiCopilotDrawer({ open, onClose, seed, onAsk, liveConfigured }) 
   </Dialog>;
 }
 
-export function Sources({ data, update, onClose }) {
+export function Sources({ data, update, api, onImported, onClose }) {
   const [banks,setBanks] = useState(['IDFC FIRST Bank','ICICI Bank','UCO Bank']);
   const [error,setError] = useState('');
   const [pending,setPending] = useState(false);
@@ -63,7 +64,8 @@ export function Sources({ data, update, onClose }) {
     try { await update(path,body,msg);onClose();} catch(e){setError(e.message);} finally {setPending(false);}
   }
   return <Dialog title="Data sources" onClose={onClose}><div className="editor">
-    <p className="status-note">Sample data only. No bank login, OTP, broker account or Gmail access is required or requested.</p>
+    <GmailDemoSource api={api} onImported={onImported}/>
+    <p className="status-note">The feeds below are simulations. They never access a bank, Gmail or a brokerage.</p>
     <h3>Account aggregator preview</h3><p className="muted">Load sample bank rows. This adds missing records; it does not remove previously loaded accounts.</p>
     {['IDFC FIRST Bank','ICICI Bank','UCO Bank'].map(n=><label key={n} className="check"><input type="checkbox" checked={banks.includes(n)}
       onChange={e=>setBanks(old=>e.target.checked?[...old,n]:old.filter(s=>s!==n))}/>{n}</label>)}

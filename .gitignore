@@ -6,6 +6,9 @@ frontend/playwright-report/
 /run-live.ps1
 /docs/four-hour-build-prompts.txt
 .env.*
+client_secret*.json
+credentials.json
+token.json
 *.pem
 *.key
 *.pfx

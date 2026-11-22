@@ -96,6 +96,7 @@ public class FinanceEngineService {
     private final Map<String, MutableCard> cards = new LinkedHashMap<>();
     private final List<TransactionItem> transactions = new ArrayList<>();
     private final Set<UUID> importedStatements = new HashSet<>();
+    private final Set<String> importedGmailIds = new HashSet<>();
     private final List<PortfolioHolding> holdings = new ArrayList<>();
     private final List<RecurringBillItem> recurringBills = new ArrayList<>();
     private final List<PayableBiller> payableBillers = new ArrayList<>();
@@ -146,6 +147,7 @@ public class FinanceEngineService {
         cards.clear();
         transactions.clear();
         importedStatements.clear();
+        importedGmailIds.clear();
         holdings.clear();
         recurringBills.clear();
         payableBillers.clear();
@@ -546,7 +548,26 @@ public class FinanceEngineService {
         if (req == null || req.rawText() == null || req.rawText().isBlank()) {
             throw new IllegalArgumentException("Paste a bank or credit card email/SMS to analyze.");
         }
-        ParsedNotice parsed = parser.parse(req.sender(), req.rawText(), req.preferLiveAi());
+        return applyNotice(parser.parse(req.sender(), req.rawText(), req.preferLiveAi()), DataSource.AI_PASTE);
+    }
+
+    public synchronized boolean hasGmailMessage(String id) { return importedGmailIds.contains(id); }
+
+    public synchronized ParseNoticeResponse importGmailDebit(GmailDemoClient.Debit debit) {
+        if (!banks.containsKey("bank-idfc-9101"))
+            throw new IllegalArgumentException("Load the sample IDFC account before importing this demo debit.");
+        var parsed = new ParsedNotice(NoticeIntent.BANK_TXN,"IDFC FIRST Bank",AccountKind.BANK,"••9101",
+            Direction.DEBIT,debit.amount(),null,debit.merchant(),"Debit card purchase",debit.date().toString(),
+            debit.reference(),false,"Gmail API / local demo reader","Self-sent demo debit",
+            "Confirmed demo debit: INR " + debit.amount() + " at " + debit.merchant() + ".");
+        if (importedGmailIds.contains(debit.id()))
+            return new ParseNoticeResponse(parsed,true,"Gmail message already imported.",buildDashboard());
+        var result = applyNotice(parsed,DataSource.GMAIL_IMPORT);
+        importedGmailIds.add(debit.id());
+        return result;
+    }
+
+    private ParseNoticeResponse applyNotice(ParsedNotice parsed, DataSource source) {
         BigDecimal amt = scale2(parsed.amount());
         if (amt == null || amt.signum() < 0 || amt.signum() == 0 && parsed.intent() != NoticeIntent.ISSUER_REVISED_DEBIT)
             throw new IllegalArgumentException("This notice has no usable transaction amount.");
@@ -643,7 +664,8 @@ public class FinanceEngineService {
             } else {
                 if (bank.latestReportedBalance != null && date.isAfter(bank.reportDay))
                     bank.netAfterReport = bank.netAfterReport.add(parsed.direction()==Direction.CREDIT ? amt : amt.negate());
-                bank.lastUpdatedNote = "Updated via AI Paste (Computed in Java)";
+                bank.lastUpdatedNote = source==DataSource.GMAIL_IMPORT ? "Confirmed Gmail demo debit (computed in Java)"
+                    : "Updated via AI Paste (Computed in Java)";
             }
         }
 
@@ -660,7 +682,7 @@ public class FinanceEngineService {
             parsed.category(),
             parsed.referenceId(),
             scale2(parsed.reportedBalance()),
-            DataSource.AI_PASTE,
+            source,
             parsed.parserUsed(),
             parsed.evidenceQuote(),
             parsed.recurring()
