@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": { "type": "string" },
+    "planName": { "type": "string", "defaultValue": "asp-foldpulse-free" },
+    "modelEndpoint": { "type": "string" },
+    "deploymentName": { "type": "string", "defaultValue": "gpt-5.4-mini" }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2024-11-01",
+      "name": "[parameters('siteName')]",
+      "location": "[resourceGroup().location]",
+      "kind": "app,linux",
+      "identity": { "type": "SystemAssigned" },
+      "tags": { "application": "rupeePulse", "purpose": "public-demo" },
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('planName'))]",
+        "httpsOnly": true,
+        "publicNetworkAccess": "Enabled",
+        "clientAffinityEnabled": false,
+        "reserved": true,
+        "siteConfig": {
+          "linuxFxVersion": "JAVA|21-java21",
+          "alwaysOn": false,
+          "ftpsState": "Disabled",
+          "minTlsVersion": "1.2",
+          "scmMinTlsVersion": "1.2",
+          "http20Enabled": true,
+          "appSettings": [
+            { "name": "BIND_ADDRESS", "value": "0.0.0.0" },
+            { "name": "PORT", "value": "80" },
+            { "name": "SERVER_PORT", "value": "80" },
+            { "name": "WEBSITES_PORT", "value": "80" },
+            { "name": "JAVA_OPTS", "value": "-Xms64m -Xmx320m -XX:+UseSerialGC" },
+            { "name": "SPRING_PROFILES_ACTIVE", "value": "public-demo" },
+            { "name": "AZURE_OPENAI_MANAGED_IDENTITY", "value": "true" },
+            { "name": "AZURE_OPENAI_ENDPOINT", "value": "[parameters('modelEndpoint')]" },
+            { "name": "AZURE_OPENAI_DEPLOYMENT", "value": "[parameters('deploymentName')]" },
+            { "name": "FOLDPULSE_MODEL_CALLS_PER_UTC_DAY", "value": "120" },
+            { "name": "SCM_DO_BUILD_DURING_DEPLOYMENT", "value": "false" }
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "basicPublishingCredentialsPolicies",
+          "apiVersion": "2024-11-01",
+          "name": "ftp",
+          "dependsOn": ["[resourceId('Microsoft.Web/sites', parameters('siteName'))]"],
+          "properties": { "allow": false }
+        },
+        {
+          "type": "basicPublishingCredentialsPolicies",
+          "apiVersion": "2024-11-01",
+          "name": "scm",
+          "dependsOn": ["[resourceId('Microsoft.Web/sites', parameters('siteName'))]"],
+          "properties": { "allow": false }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "host": { "type": "string", "value": "[reference(resourceId('Microsoft.Web/sites', parameters('siteName')), '2024-11-01').defaultHostName]" }
+  }
+}

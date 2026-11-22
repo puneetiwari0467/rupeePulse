@@ -1,0 +1,6 @@
+Date,Merchant,Amount,Type
+2026-11-22,Demo Day - Workshop reimbursement,3500.00,CREDIT
+2026-11-22,Demo Day - Print shop,600.50,DEBIT
+2026-11-22,"Demo Day - Cafe, counter 2",249.50,DEBIT
+2026-11-22,Demo Day - Metro,100.00,DEBIT
+2026-11-22,Demo Day - Stationery,50.00,DEBIT

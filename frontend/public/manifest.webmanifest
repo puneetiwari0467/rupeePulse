@@ -1,0 +1,9 @@
+{
+  "name": "rupeePulse — Personal Wealth & AI Money OS",
+  "short_name": "rupeePulse",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f6f2",
+  "theme_color": "#103b39",
+  "icons":[{"src":"/pulse.svg","sizes":"any","type":"image/svg+xml"}]
+}
